@@ -1,0 +1,82 @@
+#This project utilizes the following Superstore data:
+
+CREATE TABLE superstore (
+    item_id INTEGER PRIMARY KEY,
+    item_name TEXT,
+    category TEXT,
+    price DECIMAL(10, 2),
+    stock_quantity INTEGER,
+    average_rating DECIMAL(3, 2)
+);
+
+INSERT INTO superstore (item_id, item_name, category, price, stock_quantity, average_rating)
+VALUES
+    (1, 'Stainless Steel Cookware Set', 'Kitchen Supplies', 89.99, 50, 4.6),
+    (2, 'Memory Foam Mattress', 'Furnishings', 499.99, 30, 4.8),
+    (3, 'Smart LED TV', 'Electronics', 549.00, 20, 4.5),
+    (4, 'Robot Vacuum Cleaner', 'Appliances', 199.50, 40, 4.3),
+    (5, 'Wireless Bluetooth Speaker', 'Electronics', 39.99, 60, 4.2),
+    (6, 'Non-Stick Baking Set', 'Kitchen Supplies', 29.95, 80, 4.4),
+    (7, 'Cotton Bedding Set', 'Furnishings', 89.00, 25, 4.7),
+    (8, 'Smart Home Security Camera', 'Electronics', 79.95, 15, 4.1),
+    (9, 'Air Purifier', 'Appliances', 129.50, 35, 4.6),
+    (10, 'Premium Coffee Maker', 'Kitchen Supplies', 79.99, 50, 4.9),
+    (11, 'Ergonomic Office Chair', 'Furnishings', 189.00, 20, 4.5),
+    (12, 'Wireless Earbuds', 'Electronics', 49.99, 75, 4.3),
+    (13, 'Slow Cooker', 'Appliances', 49.95, 30, 4.7),
+    (14, 'Cutlery Set', 'Kitchen Supplies', 34.50, 40, 4.4),
+    (15, 'Cozy Throw Blanket', 'Furnishings', 24.99, 100, 4.2);
+
+#For this project, I used SQL to query the Superstore database to get information about items sold at the store and their prices. 
+
+-- Superstore Analysis Edward Basile
+
+#Use a SELECT statement to order the items by price.
+-- order items by price highest to lowest
+SELECT item_name, price
+FROM superstore
+ORDER BY price DESC;
+
+#Show a statistic about the item prices.
+-- add all prices for the items
+SELECT SUM(price)
+FROM superstore;
+
+#Show a statistic about the price for items in the category of "Kitchen Supplies". 
+-- max price for items in kitchen supplies from highest to lowest
+SELECT MAX(price), item_name
+FROM superstore
+WHERE category = 'Kitchen Supplies'
+-- need to the list the name of item highest max price to lowest in kitchen supplies
+GROUP by item_name
+ORDER BY item_name DESC;
+
+#Come up with your own question about the data and answer it using SQL. 
+-- want to know the items where the average rating for the item is 4.5 or greater for each category
+SELECT average_rating, category, item_name
+FROM superstore
+WHERE average_rating >= 4.5 
+AND category = 'Kitchen Supplies'
+ORDER BY average_rating DESC;
+-- above selects avg rating for kitchen supplies
+-- below selects avg rating for furnishings, needed to use separate queries to get info to display correctly for entire superstore where conditions were met
+SELECT average_rating, category, item_name
+FROM superstore
+WHERE average_rating >= 4.5 
+AND category = 'Furnishings'
+ORDER BY average_rating DESC;
+-- below selects avg rating for electronics
+SELECT average_rating, category, item_name
+FROM superstore
+WHERE average_rating >= 4.5 
+AND category = 'Electronics'
+ORDER BY average_rating DESC;
+-- below selects avg rating for appliances
+SELECT average_rating, category, item_name
+FROM superstore
+WHERE average_rating >= 4.5 
+AND category = 'Appliances'
+ORDER BY average_rating DESC;
+
+
+
