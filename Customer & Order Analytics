@@ -1,0 +1,67 @@
+#In this SQL, I'm querying a database with multiple tables in it to quantify statistics about customer and order data. 
+
+# How many orders were placed in January?
+-- filter out the blank and incorrect order IDs
+
+SELECT COUNT(orderID)
+FROM BIT_DB.JanSales
+-- clean order id so that it uses only 6 characters and not the word Order ID
+WHERE length(orderID) = 6
+AND orderID <> "Order ID"; 
+
+# How many of those orders were for an iPhone?
+SELECT COUNT(orderID)
+FROM BIT_DB.JanSales
+WHERE Product="iPhone"
+AND length(orderID) = 6
+AND orderID <> "Order ID";
+
+# Select the customer account numbers for all the orders that were placed in February.
+SELECT DISTINCT customers.acctnum
+FROM BIT_DB.customers
+INNER JOIN BIT_DB.FebSales
+ON customers.order_id = FebSales.orderID
+WHERE length(orderID) = 6
+AND orderID <> "Order ID";
+
+# Which product was the cheapest one sold in January, and what was the price?
+SELECT DISTINCT Product
+, MIN(price)
+FROM BIT_DB.JanSales
+WHERE length(orderID) = 6
+AND orderID <> "Order ID"
+GROUP BY Product, price
+ORDER BY price ASC
+LIMIT 1
+;
+
+# What is the total revenue for each product sold in January?
+-- Revenue can be calculated using the number of products sold and the price of the products.
+SELECT DISTINCT Product 
+, SUM(Quantity)*price AS Revenue
+FROM BIT_DB.JanSales
+GROUP BY Product
+;
+
+# Which products were sold in February at 548 Lincoln St, Seattle, WA 98101, how many of each were sold, and what was the total revenue?
+SELECT DISTINCT Product
+, SUM(Quantity)
+, SUM(Quantity)*price AS Revenue
+FROM BIT_DB.FebSales
+WHERE location = "548 Lincoln St, Seattle, WA 98101"
+Group By Product
+;
+
+# How many customers ordered more than 2 products at a time in February, and what was the average amount spent for those customers?
+SELECT COUNT(DISTINCT customers.acctnum) AS Customer_count
+, ROUND(AVG(Quantity*price),2) AS Average_price_paid
+FROM BIT_DB.FebSales
+LEFT JOIN BIT_DB.customers
+ON FebSales.orderID = customers.order_id
+WHERE FebSales.Quantity > 2
+AND length(orderID) = 6
+AND orderID <> "Order ID"
+;
+
+;
+
