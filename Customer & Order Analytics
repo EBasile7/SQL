@@ -71,3 +71,22 @@ WHERE location like '%Los Angeles%'
 GROUP BY product
 ;
 
+# Which locations in New York received at least 3 orders in January, and how many orders did they each receive?
+SELECT DISTINCT location,  
+COUNT(orderID)
+FROM BIT_DB.JanSales
+WHERE location like '%NY%'
+AND length(orderID) = 6
+AND orderID <> "Order ID"
+Group BY location
+Having COUNT(orderID)>2
+;
+
+# How many of each type of headphone were sold in February?
+SELECT SUM(Quantity) AS Total_Quantity,
+Product
+FROM BIT_DB.FebSales
+WHERE Product like '%headphone%'
+GROUP BY Product
+;
+
