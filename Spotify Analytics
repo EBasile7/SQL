@@ -110,3 +110,22 @@ FROM BIT_DB.Spotifydata
 GROUP BY track_name
 ORDER BY danceability DESC
 ;
+
+# Calculate the average popularity for the artists in the Spotify data table. 
+# Then, for every artist with an average popularity of 90 or above,
+# show their name, their average popularity, and label them as a “Top Star”.
+
+--Used a CTE to calculate the average popularity for every artist
+WITH average_popularity_CTE AS (
+SELECT Spotifydata.artist_name,
+AVG(Spotifydata.popularity) AS average_popularity
+FROM SpotifyData 
+GROUP BY Spotifydata.artist_name
+)
+ 
+SELECT  artist_name
+, average_popularity
+,'Top Star' AS top_star
+FROM average_popularity_CTE
+WHERE average_popularity>=90
+;
