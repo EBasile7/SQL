@@ -1,0 +1,296 @@
+# Digital Media Store using chinook database, Final SQL Project
+
+# Get a feel for what the database contains
+SELECT * 
+FROM chinook.albums
+LIMIT 5;
+
+SELECT *
+FROM chinook.artists
+LIMIT 5;
+
+# Show Customers (their full names, customer ID, and country) who are not in the US.
+SELECT customers.FirstName
+, customers.LastName
+, customers.CustomerId
+, customers.Country
+FROM chinook.customers
+WHERE customers.Country <> 'USA'
+;
+
+# Show only the Customers from Brazil.
+SELECT customers.FirstName
+, customers.LastName
+, customers.CustomerId
+, customers.Country
+FROM chinook.customers
+WHERE customers.Country = 'Brazil'
+;
+
+# Find the Invoices of customers who are from Brazil. The resulting table should show the customer's full name, InvoiceID,
+# Date of the invoice, and billing country.
+SELECT customers.FirstName
+, customers.LastName
+, invoices.InvoiceId
+, invoices.InvoiceDate
+, invoices.BillingCountry
+FROM chinook.invoices
+LEFT JOIN chinook.customers
+ON invoices.CustomerId = customers.CustomerId
+WHERE invoices.BillingCountry = 'Brazil'
+;
+
+# Show the Employees who are Sales Agents.
+
+SELECT employees.FirstName
+, employees.LastName 
+, employees.Title
+FROM chinook.employees
+WHERE employees.Title = 'Sales Support Agent'
+;
+
+# Find a unique/distinct list of billing countries from the Invoice table.
+SELECT DISTINCT invoices.BillingCountry
+FROM chinook.invoices
+ORDER BY invoices.BillingCountry ASC;
+
+# Provide a query that shows the invoices associated with each sales agent.
+SELECT employees.FirstName
+, employees.LastName
+, invoices.InvoiceId
+FROM chinook.employees
+INNER JOIN chinook.customers
+ON customers.SupportRepId = employees.EmployeeId
+INNER JOIN chinook.invoices
+ON invoices.CustomerId = customers.CustomerId
+;
+
+# Show the Invoice Total, Customer name, Country, and Sales Agent name for all invoices and customers.
+SELECT customers.FirstName AS customer_first_name
+, customers.LastName AS customer_last_name
+, customers.Country
+, employees.FirstName AS sales_rep_first_name
+, employees.LastName AS sales_rep_last_name
+, invoices.Total
+FROM chinook.customers
+INNER JOIN chinook.employees
+ON customers.SupportRepId = employees.EmployeeId
+INNER JOIN chinook.invoices
+ON invoices.CustomerId = customers.CustomerId
+;
+
+# How many Invoices were there in 2009?
+SELECT COUNT(invoices.InvoiceId)
+FROM chinook.invoices
+WHERE invoices.InvoiceDate BETWEEN '2009-01-01' AND '2009-12-31'
+;
+
+# What are the total sales for 2009?
+SELECT ROUND(SUM(invoices.Total),2)
+FROM chinook.invoices
+WHERE invoices.InvoiceDate BETWEEN '2009-01-01' AND '2009-12-31'
+;
+
+# Write a query that includes the purchased track name with each invoice line ID.
+SELECT tracks.Name
+, invoice_items.InvoiceLineId
+FROM chinook.tracks
+INNER JOIN chinook.invoice_items
+ON tracks.TrackId = invoice_items.TrackId
+;
+
+# Write a query that includes the purchased track name AND artist name with each invoice line ID.
+SELECT artists.Name As artist
+, tracks.Name AS track
+, invoice_items.InvoiceLineId
+FROM chinook.invoice_items
+LEFT JOIN chinook.tracks
+ON invoice_items.TrackId = Tracks.TrackId
+INNER JOIN chinook.albums
+ON albums.AlbumId = Tracks.AlbumId
+LEFT JOIN chinook.artists
+ON artists.ArtistId = albums.ArtistId
+;
+
+# Provide a query that shows all the Tracks, and include the Album name, Media type, and Genre.
+SELECT tracks.Name AS track
+, albums.Title AS album
+, media_types.Name AS media
+, genres.Name AS genre
+FROM chinook.tracks
+INNER JOIN chinook.albums
+ON tracks.AlbumId = albums.AlbumId
+INNER JOIN chinook.media_types
+ON media_types.MediaTypeId = tracks.MediaTypeId
+INNER JOIN chinook.genres
+ON genres.GenreId = tracks.GenreId
+;
+
+# Show the total sales made by each sales agent.
+SELECT employees.FirstName
+, employees.LastName
+, ROUND(SUM(invoices.Total),2) AS total_sales
+FROM chinook.employees
+INNER JOIN chinook.customers
+ON customers.SupportRepId = employees.EmployeeId
+INNER JOIN chinook.invoices
+ON invoices.CustomerId = customers.CustomerId
+WHERE employees.Title = 'Sales Support Agent'
+GROUP BY employees.FirstName
+;
+
+# Which sales agent made the most dollars in sales in 2009?
+SELECT employees.FirstName
+, employees.LastName
+, ROUND(SUM(invoices.Total),2) AS total_sales
+FROM chinook.employees
+INNER JOIN chinook.customers
+ON customers.SupportRepId = employees.EmployeeId
+INNER JOIN chinook.invoices
+ON invoices.CustomerId = customers.CustomerId
+WHERE employees.Title = 'Sales Support Agent'
+AND invoices.InvoiceDate LIKE '2009%'
+GROUP BY employees.FirstName
+ORDER BY ROUND(SUM(invoices.Total),2 ) DESC
+LIMIT 1
+;
+
+# My question: Which Playlists have the most tracks?
+SELECT playlists.Name AS playlist_name
+, playlists.PlaylistId
+, COUNT(playlist_track.TrackId) AS track_count
+FROM chinook.playlists
+INNER JOIN chinook.playlist_track ON playlists.PlaylistId = playlist_track.PlaylistId
+INNER JOIN chinook.tracks ON playlist_track.TrackId = tracks.TrackId
+GROUP BY playlists.PlaylistId, playlists.Name
+ORDER BY track_count DESC
+;
+
+# My question: Which Playlists have the most tracks, but use a CTE to achieve the same result to make the code easier to read.
+WITH TrackCounts AS (
+    SELECT playlists.PlaylistId
+    , playlists.Name AS playlist_name
+    , COUNT(playlist_track.TrackId) AS track_count
+    FROM playlists 
+        --Can not use chinook.playlists here because already connected to chinook DB, otherwise get an error.
+    INNER JOIN playlist_track ON playlists.PlaylistId = playlist_track.PlaylistId
+    GROUP BY playlists.PlaylistId, playlists.Name
+)
+SELECT playlist_name 
+, PlaylistId 
+, track_count
+FROM TrackCounts
+ORDER BY track_count DESC
+;
+
+# My question: Create an Employee "reports to" table
+SELECT employees.FirstName
+, employees.LastName
+, employees.EmployeeId
+, employees.ReportsTo
+FROM chinook.employees
+;
+
+# My question: Create an Employee Hierarchy table that displays the reporting structure of the company and use a recursive
+# CTE so that if employees were hired in the future it would display the correct reporting structure.
+WITH RECURSIVE EmployeeHierarchy AS (
+    -- Anchor member: start with the top-level employees (those who do not report to anyone)
+    SELECT 
+       employees.EmployeeId
+     , employees.FirstName
+     , employees.LastName       
+     , employees.ReportsTo
+     , 0 AS Level
+    FROM 
+        employees
+    WHERE 
+        ReportsTo IS NULL
+
+    UNION ALL
+
+    -- Recursive member: join the CTE with the employees table to find the reporting employees
+    SELECT 
+        e.EmployeeId,
+        e.FirstName,
+        e.LastName,
+        e.ReportsTo,
+        eh.Level + 1 AS Level
+    FROM 
+        employees e
+    INNER JOIN 
+        EmployeeHierarchy eh ON e.ReportsTo = eh.EmployeeId
+)
+-- Final select to get the desired columns
+SELECT 
+    EmployeeId,
+    FirstName,
+    LastName,
+    ReportsTo,
+    Level
+FROM 
+    EmployeeHierarchy
+ORDER BY 
+    Level, ReportsTo, EmployeeId
+;
+
+
+# I then used CHATGPT and prompt engineered the SQL code above so that I could display the Hierarchy in a format that shows
+# which employee reports to which boss by name. This is a more user friendly structure while maintaining the ability
+# to add new employees in the future. 
+WITH RECURSIVE EmployeeHierarchy AS (
+    -- Anchor member: start with the top-level employees (those who do not report to anyone)
+    SELECT 
+        employees.EmployeeId,
+        employees.FirstName,
+        employees.LastName,
+        ReportsTo,
+        0 AS Level
+    FROM 
+        employees
+    WHERE 
+        ReportsTo IS NULL
+
+    UNION ALL
+
+    -- Recursive member: join the CTE with the employees table to find the reporting employees
+    SELECT 
+        e.EmployeeId,
+        e.FirstName,
+        e.LastName,
+        e.ReportsTo,
+        eh.Level + 1 AS Level
+    FROM 
+        employees e
+    INNER JOIN 
+        EmployeeHierarchy eh ON e.ReportsTo = eh.EmployeeId
+)
+-- Final select to get the desired columns
+SELECT 
+    eh.EmployeeId,
+    eh.FirstName || ' ' || eh.LastName AS EmployeeName,
+    e2.FirstName || ' ' || e2.LastName AS BossName,
+    eh.Level
+FROM 
+    EmployeeHierarchy eh
+LEFT JOIN 
+    employees e2 ON eh.ReportsTo = e2.EmployeeId
+ORDER BY 
+    eh.Level, eh.ReportsTo, eh.EmployeeId
+;
+
+--Explanation for above query:
+--Anchor member: The first part of the CTE selects top-level employees who do not report to anyone (ReportsTo IS NULL), 
+--and assigns them a level of 0.
+
+--Recursive member: The second part of the CTE recursively joins the employees table with the EmployeeHierarchy CTE to 
+--find employees who report to the ones already included in the hierarchy, increasing the level by 1 each time.
+
+--Final select:
+--Selects from the EmployeeHierarchy CTE.
+--Joins the employees table again (LEFT JOIN employees e2 ON eh.ReportsTo = e2.EmployeeId) to get the boss's name.
+--Concatenates FirstName and LastName to form full names for both employees and their bosses.
+--Orders the results by the hierarchical level, then by the ReportsTo and EmployeeId columns to maintain the hierarchical
+-- order.
+
+--This query will give you a hierarchical view of your employees, showing which employees report to which bosses, along 
+--with their full names.
